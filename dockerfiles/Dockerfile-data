@@ -1,0 +1,24 @@
+FROM quay.io/quarkus/centos-quarkus-maven:20.0.0-java8 as quarkus-dev
+COPY quarkus-backend /projects/quarkus-backend
+WORKDIR /projects/quarkus-backend
+RUN env && \
+    chmod -R 775 . && \
+    mvn dependency:go-offline && \
+    mvn dependency:go-offline -Dnative
+
+FROM quay.io/eclipse/che-nodejs8-centos:nightly as node-frontend-dev
+COPY node-frontend /projects/node-frontend
+WORKDIR /projects/node-frontend
+RUN env && \
+    chmod -R 775 . && \
+    npm install
+
+FROM centos:8
+COPY --from=quarkus-dev /home/quarkus/.m2/repository/ /work/m2repo
+COPY --from=node-frontend-dev /projects/node-frontend/node_modules /work/node_modules
+
+RUN ls /work/m2repo && ls /work/node_modules
+
+
+CMD ["sleep", "infinity"]
+
